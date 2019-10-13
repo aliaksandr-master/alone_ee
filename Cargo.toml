@@ -1,10 +1,14 @@
 [package]
 name = "alone_ee"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["master <alxe.master@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0"
 description = "Small event emitter for rapid development of weak dependency in applications. simple. powerful. predicted"
+homepage = "https://github.com/aliaksandr-master/alone_ee"
+documentation = "https://github.com/aliaksandr-master/alone_ee"
+repository = "https://github.com/aliaksandr-master/alone_ee"
+keywords = ["event emitter", "event", "ee", "publish", "subscribe"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
