@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["master <alxe.master@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0"
+description = "Small event emitter for rapid development of weak dependency in applications. simple. powerful. predicted"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
