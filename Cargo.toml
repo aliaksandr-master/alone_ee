@@ -8,7 +8,7 @@ description = "Small event emitter for rapid development of weak dependency in a
 homepage = "https://github.com/aliaksandr-master/alone_ee"
 documentation = "https://github.com/aliaksandr-master/alone_ee"
 repository = "https://github.com/aliaksandr-master/alone_ee"
-keywords = ["event emitter", "event", "ee", "publish", "subscribe"]
+keywords = ["event", "emitter", "ee", "publish", "subscribe"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
