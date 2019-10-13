@@ -58,7 +58,7 @@ impl<T> EventEmitter<T> {
         }
     }
 
-    pub fn emit (&mut self, value: Arc<T>) -> Arc<T> {
+    pub fn emit(&mut self, value: Arc<T>) -> Arc<T> {
         self._fired_times += 1;
         for lst in self.listeners.write().expect("not poisoned").iter_mut() {
             (lst.trigger)(value.clone());
@@ -73,8 +73,7 @@ mod tests {
 
     #[test]
     fn test_ee() {
-        #[derive(Debug)]
-        #[derive(PartialEq)]
+        #[derive(Debug, PartialEq)]
         struct SomeEvent {
             ev: u32,
             txt: &'static str,
@@ -107,10 +106,14 @@ mod tests {
 
         ee.emit(ev2.clone());
 
-//        let tmp_ev1 = ev1.clone();
-//        let tmp_evF = fired_ev.into_inner().unwrap().unwrap().clone();
+        //        let tmp_ev1 = ev1.clone();
+        //        let tmp_evF = fired_ev.into_inner().unwrap().unwrap().clone();
 
         assert_eq!(ee.fired_times(), 2);
-//        assert!(Arc::ptr_eq(&tmp_ev1, &tmp_evF));
+        //        assert!(Arc::ptr_eq(&tmp_ev1, &tmp_evF));
+
+        ee.reset();
+
+        assert_eq!(ee.fired_times(), 0);
     }
 }
