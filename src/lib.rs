@@ -23,7 +23,7 @@ impl<T> EventEmitter<T> {
     }
 
     pub fn reset(&mut self) {
-        *(self.listeners.write().expect("not poisoned")) = Vec::new();
+        self.listeners.write().expect("not poisoned").clear();
     }
 
     pub fn on(&mut self, handler: Box<dyn FnMut(Arc<T>)>) -> impl FnOnce() {
