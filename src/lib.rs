@@ -1,10 +1,24 @@
 use std::sync::{Arc, RwLock};
+use std::fmt;
 
 pub struct Listener<T> {
     id: usize,
     pub handler: Box<dyn FnMut(Arc<T>)>,
 }
 
+impl<T> fmt::Debug for Listener<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<EventEmitterListener{}>", self.id)
+    }
+}
+
+impl<T> fmt::Display for Listener<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "<EventEmitterListener{}>", self.id)
+    }
+}
+
+#[derive(Debug)]
 pub struct EventEmitter<T> {
     next_listener_id: usize,
     pub listeners: Arc<RwLock<Vec<Listener<T>>>>,
