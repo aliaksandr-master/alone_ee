@@ -1,9 +1,9 @@
-use std::sync::{Arc, RwLock};
 use std::fmt;
+use std::sync::{Arc, RwLock};
 
 pub struct Listener<T> {
-    id: usize,
-    pub handler: Box<dyn FnMut(Arc<T>)>,
+    pub id: usize,
+    pub handler: Box<dyn FnMut(T)>,
 }
 
 impl<T> fmt::Debug for Listener<T> {
@@ -21,10 +21,13 @@ impl<T> fmt::Display for Listener<T> {
 #[derive(Debug)]
 pub struct EventEmitter<T> {
     next_listener_id: usize,
-    pub listeners: Arc<RwLock<Vec<Listener<T>>>>,
+    listeners: Arc<RwLock<Vec<Listener<T>>>>,
 }
 
-impl<T> EventEmitter<T> {
+impl<T> EventEmitter<T>
+where
+    T: Clone,
+{
     pub fn new() -> Self {
         EventEmitter {
             next_listener_id: 0,
@@ -40,7 +43,7 @@ impl<T> EventEmitter<T> {
         self.listeners.write().expect("not poisoned").clear();
     }
 
-    pub fn on(&mut self, handler: Box<dyn FnMut(Arc<T>)>) -> impl FnOnce() {
+    pub fn on(&mut self, handler: Box<dyn FnMut(T)>) -> impl FnOnce() {
         let id = self.next_listener_id;
         self.next_listener_id += 1;
 
@@ -65,7 +68,7 @@ impl<T> EventEmitter<T> {
         }
     }
 
-    pub fn emit(&self, value: Arc<T>) -> Arc<T> {
+    pub fn emit(&self, value: T) -> T {
         for lst in self.listeners.write().expect("not poisoned").iter_mut() {
             (lst.handler)(value.clone());
         }
@@ -85,7 +88,7 @@ mod tests {
             txt: &'static str,
         }
 
-        let mut ee: EventEmitter<SomeEvent> = EventEmitter::new();
+        let mut ee: EventEmitter<Arc<SomeEvent>> = EventEmitter::new();
 
         let fired_ev: Arc<RwLock<Option<Arc<SomeEvent>>>> = Arc::new(RwLock::new(Option::None));
 
