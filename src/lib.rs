@@ -1,9 +1,11 @@
+#![allow(clippy::type_complexity)]
+use std::error::Error;
 use std::fmt;
 use std::sync::{Arc, RwLock};
 
 pub struct Listener<T> {
     pub id: usize,
-    pub handler: Box<dyn FnMut(T)>,
+    pub handler: Box<dyn FnMut(T) -> Result<(), Box<dyn Error>>>,
 }
 
 impl<T> fmt::Debug for Listener<T> {
@@ -24,12 +26,21 @@ pub struct EventEmitter<T> {
     listeners: Arc<RwLock<Vec<Listener<T>>>>,
 }
 
+impl<T> Default for EventEmitter<T> {
+    fn default() -> Self {
+        Self {
+            next_listener_id: 0,
+            listeners: Arc::new(RwLock::new(Vec::new())),
+        }
+    }
+}
+
 impl<T> EventEmitter<T>
 where
     T: Clone,
 {
     pub fn new() -> Self {
-        EventEmitter {
+        Self {
             next_listener_id: 0,
             listeners: Arc::new(RwLock::new(Vec::new())),
         }
@@ -39,11 +50,18 @@ where
         self.listeners.read().expect("not poisoned").len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn reset(&mut self) {
         self.listeners.write().expect("not poisoned").clear();
     }
 
-    pub fn on(&mut self, handler: Box<dyn FnMut(T)>) -> impl FnOnce() {
+    pub fn on(
+        &mut self,
+        handler: Box<dyn FnMut(T) -> Result<(), Box<dyn Error>>>,
+    ) -> impl FnOnce() {
         let id = self.next_listener_id;
         self.next_listener_id += 1;
 
@@ -68,11 +86,11 @@ where
         }
     }
 
-    pub fn emit(&self, value: T) -> T {
+    pub fn emit(&self, value: T) -> Result<T, Box<dyn Error>> {
         for lst in self.listeners.write().expect("not poisoned").iter_mut() {
-            (lst.handler)(value.clone());
+            (lst.handler)(value.clone())?;
         }
-        value
+        Ok(value)
     }
 }
 
@@ -96,7 +114,8 @@ mod tests {
 
         let rm = ee.on(Box::new(move |ev| {
             let mut mut_fired_ev = fired_ev_clone.write().unwrap();
-            *mut_fired_ev = Option::Some(ev.clone())
+            *mut_fired_ev = Option::Some(ev.clone());
+            Ok(())
         }));
 
         let ev1 = Arc::new(SomeEvent {
@@ -132,7 +151,8 @@ mod tests {
 
         let rm = ee.on(Box::new(move |ev| {
             let mut mut_fired_ev = fired_ev_clone.write().unwrap();
-            *mut_fired_ev = Option::Some(ev.clone())
+            *mut_fired_ev = Option::Some(ev.clone());
+            Ok(())
         }));
 
         assert_eq!(ee.len(), 1);
