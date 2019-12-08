@@ -1,6 +1,7 @@
 #![allow(clippy::type_complexity)]
 use std::cell::RefCell;
 use std::error::Error;
+use std::fmt;
 use std::sync::{Arc, Weak};
 
 pub struct Event<TEvent> {
@@ -29,6 +30,28 @@ impl<TEvent> Event<TEvent> {
 pub struct Listener<TEvent> {
     handler: Option<Box<dyn FnMut(&mut Event<TEvent>) -> Result<(), Box<dyn Error>>>>,
     once: bool,
+}
+
+impl<TEvent> fmt::Display for Listener<TEvent> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Listener<handler: {}, once:{}>",
+            if self.handler.is_some() { "active" } else { "inactive" },
+            self.once
+        )
+    }
+}
+
+impl<TEvent> fmt::Debug for Listener<TEvent> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Listener<handler: {}, once:{}>",
+            if self.handler.is_some() { "active" } else { "inactive" },
+            self.once
+        )
+    }
 }
 
 impl<TEvent> Listener<TEvent> {
@@ -74,8 +97,15 @@ pub trait Dispatchable<TEvent> {
     fn reset(&mut self);
 }
 
+#[derive(Debug)]
 pub struct EventEmitter<TEvent> {
     listeners: Vec<Weak<RefCell<Listener<TEvent>>>>,
+}
+
+impl<TEvent> fmt::Display for EventEmitter<TEvent> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "EventEmitter<{}>", self.listeners.len())
+    }
 }
 
 impl<TEvent> EventEmitter<TEvent> {
