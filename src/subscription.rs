@@ -1,12 +1,12 @@
 use crate::listener::Listener;
-use std::sync::{Arc, RwLock};
+use std::sync::{RwLock, Weak};
 
 pub struct Subscription<TEvent> {
-    listener: Option<Arc<RwLock<Listener<TEvent>>>>,
+    listener: Option<Weak<RwLock<Listener<TEvent>>>>,
 }
 
 impl<TEvent> Subscription<TEvent> {
-    pub fn new(listener: Arc<RwLock<Listener<TEvent>>>) -> Self {
+    pub fn new(listener: Weak<RwLock<Listener<TEvent>>>) -> Self {
         Self { listener: Some(listener) }
     }
 }
@@ -14,7 +14,9 @@ impl<TEvent> Subscription<TEvent> {
 impl<TEvent> Drop for Subscription<TEvent> {
     fn drop(&mut self) {
         if let Some(x) = self.listener.take() {
-            x.write().unwrap().cancel()
+            if let Some(x) = x.upgrade() {
+                x.write().unwrap().cancel()
+            }
         }
     }
 }

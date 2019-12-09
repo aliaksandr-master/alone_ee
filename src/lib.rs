@@ -1,10 +1,10 @@
 #![allow(clippy::type_complexity)]
 #![allow(dead_code)]
 
-pub mod dispatchable;
 pub mod event;
 pub mod event_emitter;
 pub mod listener;
+pub mod observer;
 pub mod subscription;
 
 #[cfg(test)]

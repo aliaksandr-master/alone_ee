@@ -1,13 +1,13 @@
-use crate::dispatchable::Observer;
 use crate::event::Event;
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
+use crate::observer::Observer;
 use crate::subscription::Subscription;
 use std::fmt;
-use std::sync::{Arc, RwLock, Weak};
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
-    listeners: Vec<Weak<RwLock<Listener<TEvent>>>>,
+    listeners: Vec<Arc<RwLock<Listener<TEvent>>>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
@@ -36,13 +36,7 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn cleanup(&mut self) {
-        self.listeners.retain(|ref l| {
-            if let Some(l) = l.upgrade() {
-                l.read().unwrap().handler.is_some()
-            } else {
-                false
-            }
-        });
+        self.listeners.retain(|ref l| l.read().unwrap().handler.is_some());
     }
 
     pub fn len(&self) -> usize {
@@ -64,9 +58,11 @@ impl<TEvent> EventEmitter<TEvent> {
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
     fn subscribe(&mut self, listener: Arc<RwLock<Listener<TEvent>>>) -> Subscription<TEvent> {
-        self.listeners.push(Arc::downgrade(&listener));
+        let subscription = Subscription::new(Arc::downgrade(&listener));
 
-        Subscription::new(listener)
+        self.listeners.push(listener);
+
+        subscription
     }
 
     fn publish(&mut self, message: TEvent) -> EventHandlerResult {
@@ -74,18 +70,14 @@ impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
         let mut event = Event::new(message);
 
         for lst in self.listeners.iter() {
-            if let Some(lst) = lst.clone().upgrade() {
-                let mut lst = lst.write().unwrap();
+            let mut lst = lst.write().unwrap();
 
-                if let Some(handler) = &mut lst.handler {
-                    (handler)(&mut event)?;
+            if let Some(handler) = &mut lst.handler {
+                (handler)(&mut event)?;
 
-                    if lst.once {
-                        cleanup = true;
-                        lst.handler = None;
-                    }
-                } else {
+                if lst.once {
                     cleanup = true;
+                    lst.handler = None;
                 }
             } else {
                 cleanup = true;
