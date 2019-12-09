@@ -1,6 +1,6 @@
 [package]
 name = "alone_ee"
-version = "1.2.4"
+version = "1.2.5"
 authors = ["master <alxe.master@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0"
