@@ -6,21 +6,27 @@ use std::fmt;
 use std::rc::Rc;
 
 #[derive(Debug, Default)]
-pub struct EventEmitter<TEvent> {
+pub struct StatefulEmitter<TEvent> {
     listeners: Rc<RefCell<Vec<Rc<RefCell<Listener<TEvent>>>>>>,
+    last_event: Option<TEvent>,
 }
 
-impl<TEvent> fmt::Display for EventEmitter<TEvent> {
+impl<TEvent> fmt::Display for StatefulEmitter<TEvent> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "EventEmitter<{}>", self.listeners.borrow().len())
+        write!(f, "StatefulEmitter<{}>", self.listeners.borrow().len())
     }
 }
 
-impl<TEvent> EventEmitter<TEvent> {
+impl<TEvent> StatefulEmitter<TEvent> {
     pub fn new() -> Self {
         Self {
             listeners: Rc::new(RefCell::new(vec![])),
+            last_event: None,
         }
+    }
+
+    pub fn last(&self) -> Option<&TEvent> {
+        self.last_event.as_ref()
     }
 
     pub fn on(&mut self, lst: EventHandler<TEvent>) -> Subscription<TEvent> {
@@ -50,6 +56,7 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn reset(&mut self) {
+        self.last_event = None;
         self.listeners.borrow_mut().clear();
     }
 
@@ -58,7 +65,7 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 }
 
-impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
+impl<TEvent> Observer<TEvent> for StatefulEmitter<TEvent> {
     fn subscribe(&mut self, listener: Rc<RefCell<Listener<TEvent>>>) -> Subscription<TEvent> {
         let subscription = Subscription::new(Rc::downgrade(&listener), Rc::downgrade(&self.listeners));
 
@@ -89,11 +96,13 @@ impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
             self.cleanup();
         }
 
+        self.last_event = Some(message);
+
         Ok(())
     }
 }
 
-impl<TEvent> Drop for EventEmitter<TEvent> {
+impl<TEvent> Drop for StatefulEmitter<TEvent> {
     fn drop(&mut self) {
         self.reset()
     }

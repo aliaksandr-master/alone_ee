@@ -1,10 +1,10 @@
 #![allow(clippy::type_complexity)]
 #![allow(dead_code)]
 
-pub mod event;
 pub mod event_emitter;
 pub mod listener;
 pub mod observer;
+pub mod stateful_emitter;
 pub mod subscription;
 
 #[cfg(test)]
@@ -12,7 +12,6 @@ mod tests {
     use crate::event_emitter::EventEmitter;
     use std::cell::RefCell;
     use std::rc::Rc;
-    use std::sync::Arc;
 
     #[test]
     fn test_ee() {
@@ -30,7 +29,7 @@ mod tests {
             let fired_ev_clone = fired_ev.clone();
 
             ee.on(Box::new(move |ev| {
-                *fired_ev_clone.borrow_mut() = Option::Some(Rc::clone(ev.data()));
+                *fired_ev_clone.borrow_mut() = Option::Some(Rc::clone(ev));
                 Ok(())
             }))
         };
@@ -39,7 +38,7 @@ mod tests {
             let fired_ev_clone = fired_ev.clone();
 
             ee.on(Box::new(move |ev| {
-                *fired_ev_clone.borrow_mut() = Option::Some(Rc::clone(ev.data()));
+                *fired_ev_clone.borrow_mut() = Option::Some(Rc::clone(ev));
                 Ok(())
             }))
         };
@@ -53,10 +52,6 @@ mod tests {
         assert_eq!(ee.len(), 2);
 
         drop(subs1);
-
-        assert_eq!(ee.len(), 2);
-
-        ee.cleanup();
 
         assert_eq!(ee.len(), 1);
 
@@ -73,7 +68,7 @@ mod tests {
         let subs3 = {
             let fired_ev_clone = fired_ev.clone();
             ee.once(Box::new(move |ev| {
-                *fired_ev_clone.borrow_mut() = Option::Some(ev.data().clone());
+                *fired_ev_clone.borrow_mut() = Option::Some(ev.clone());
                 Ok(())
             }))
         };
