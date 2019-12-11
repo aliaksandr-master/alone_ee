@@ -1,7 +1,7 @@
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
 use crate::observer::Observer;
 use crate::subscription::Subscription;
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
