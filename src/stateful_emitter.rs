@@ -18,10 +18,10 @@ impl<TEvent> fmt::Display for StatefulEmitter<TEvent> {
 }
 
 impl<TEvent> StatefulEmitter<TEvent> {
-    pub fn new() -> Self {
+    pub fn new(initial_event: Option<TEvent>) -> Self {
         Self {
             listeners: Rc::new(RefCell::new(vec![])),
-            last_event: None,
+            last_event: initial_event,
         }
     }
 
