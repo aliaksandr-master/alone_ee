@@ -50,7 +50,7 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn reset(&mut self) {
-        self.listeners.borrow_mut().clear();
+        self.listeners = Rc::new(RefCell::new(vec![]));
     }
 
     pub fn emit(&mut self, message: TEvent) -> EventHandlerResult {
