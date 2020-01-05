@@ -6,5 +6,5 @@ use std::rc::Rc;
 pub trait Observer<TEvent> {
     fn subscribe(&mut self, listener: Rc<RefCell<Listener<TEvent>>>) -> Subscription<TEvent>;
 
-    fn publish(&mut self, event: TEvent) -> EventHandlerResult;
+    fn publish(&mut self, event: &TEvent) -> EventHandlerResult;
 }

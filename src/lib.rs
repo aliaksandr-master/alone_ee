@@ -4,7 +4,6 @@
 pub mod event_emitter;
 pub mod listener;
 pub mod observer;
-pub mod stateful_emitter;
 pub mod subscription;
 
 #[cfg(test)]
@@ -46,7 +45,7 @@ mod tests {
 
         assert!(fired_ev.borrow().is_none());
 
-        ee.emit(Rc::new(SomeEvent { ev: 123, txt: "hello" })).unwrap();
+        ee.emit(&Rc::new(SomeEvent { ev: 123, txt: "hello" })).unwrap();
 
         assert!(fired_ev.borrow().is_some());
 
@@ -60,7 +59,7 @@ mod tests {
             assert_eq!(ev.ev, 123);
         }
 
-        ee.emit(Rc::new(SomeEvent { ev: 333, txt: "world" })).unwrap();
+        ee.emit(&Rc::new(SomeEvent { ev: 333, txt: "world" })).unwrap();
 
         if let Some(ev) = fired_ev.borrow().clone() {
             assert_eq!(ev.ev, 333);
@@ -76,7 +75,7 @@ mod tests {
 
         assert_eq!(ee.len(), 2);
 
-        ee.emit(Rc::new(SomeEvent { ev: 444, txt: "world" })).unwrap();
+        ee.emit(&Rc::new(SomeEvent { ev: 444, txt: "world" })).unwrap();
 
         if let Some(ev) = fired_ev.borrow().clone() {
             assert_eq!(ev.ev, 444);
@@ -84,7 +83,7 @@ mod tests {
 
         drop(subs2);
 
-        ee.emit(Rc::new(SomeEvent { ev: 555, txt: "world" })).unwrap();
+        ee.emit(&Rc::new(SomeEvent { ev: 555, txt: "world" })).unwrap();
 
         if let Some(ev) = fired_ev.borrow().clone() {
             assert_eq!(ev.ev, 444);
@@ -108,7 +107,7 @@ mod tests {
             let mut subs = vec![];
             let results = Rc::new(RefCell::new(0_u128));
 
-            for i in 0..count_ee_listeners {
+            for _i in 0..count_ee_listeners {
                 let results = results.clone();
                 let sbs = ee.on(Box::new(move |s| {
                     //
@@ -128,11 +127,11 @@ mod tests {
                         println!("done: {} in {:?}", i, it_now.elapsed());
                         it_now = Instant::now();
                     }
-                    ee.emit(i).unwrap();
+                    ee.emit(&i).unwrap();
                 }
             } else {
                 for i in 0..i_max {
-                    ee.emit(i).unwrap();
+                    ee.emit(&i).unwrap();
                 }
             }
 

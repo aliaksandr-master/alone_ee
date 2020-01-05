@@ -53,7 +53,7 @@ impl<TEvent> EventEmitter<TEvent> {
         self.listeners = Rc::new(RefCell::new(vec![]));
     }
 
-    pub fn emit(&mut self, message: TEvent) -> EventHandlerResult {
+    pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
         self.publish(message)
     }
 }
@@ -67,14 +67,14 @@ impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
         subscription
     }
 
-    fn publish(&mut self, message: TEvent) -> EventHandlerResult {
+    fn publish(&mut self, message: &TEvent) -> EventHandlerResult {
         let mut cleanup = false;
 
         for lst in self.listeners.borrow().iter() {
             let mut lst = lst.borrow_mut();
 
             if let Some(handler) = &mut lst.handler {
-                (handler)(&message)?;
+                (handler)(message)?;
 
                 if lst.once {
                     cleanup = true;
