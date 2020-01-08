@@ -8,12 +8,12 @@ use std::rc::Rc;
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
     listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
-    new_listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
+    new_listeners_buf: Vec<Rc<RefCell<Listener<TEvent>>>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "EventEmitter<{}>", self.listeners.len())
+        write!(f, "EventEmitter<{}>", self.len())
     }
 }
 
@@ -21,24 +21,29 @@ impl<TEvent> EventEmitter<TEvent> {
     pub fn new() -> Self {
         Self {
             listeners: vec![],
-            new_listeners: vec![],
+            new_listeners_buf: vec![],
         }
     }
 
     pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
-        self.subscribe(Rc::new(RefCell::new(Listener::new(false, handler))))
+        self.subscribe(Listener::new(false, handler))
     }
 
     pub fn once(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
-        self.subscribe(Rc::new(RefCell::new(Listener::new(true, handler))))
+        self.subscribe(Listener::new(true, handler))
     }
 
     pub fn is_empty(&self) -> bool {
-        self.listeners.is_empty() && self.new_listeners.is_empty()
+        self.listeners.is_empty() && self.new_listeners_buf.is_empty()
     }
 
     pub fn reset(&mut self) {
         self.listeners = vec![];
+        self.new_listeners_buf = vec![];
+    }
+
+    pub fn len(&self) -> usize {
+        self.listeners.iter().filter(|l| l.borrow().is_active()).count() + self.new_listeners_buf.iter().filter(|l| l.borrow().is_active()).count()
     }
 
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
@@ -47,17 +52,18 @@ impl<TEvent> EventEmitter<TEvent> {
 }
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
-    fn subscribe(&mut self, listener: Rc<RefCell<Listener<TEvent>>>) -> Subscription<TEvent> {
+    fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent> {
+        let listener = Rc::new(RefCell::new(listener));
         let subsc = Subscription::new(Rc::downgrade(&listener));
-        self.new_listeners.push(listener);
+        self.new_listeners_buf.push(listener);
         subsc
     }
 
     fn publish(&mut self, message: &TEvent) -> EventHandlerResult {
         let mut res = Ok(());
 
-        if !self.new_listeners.is_empty() {
-            self.listeners.extend(self.new_listeners.drain(..))
+        if !self.new_listeners_buf.is_empty() {
+            self.listeners.extend(self.new_listeners_buf.drain(..))
         } else if self.listeners.is_empty() {
             return res;
         }
