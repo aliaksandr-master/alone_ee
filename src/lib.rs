@@ -49,11 +49,11 @@ mod tests {
 
         assert!(fired_ev.borrow().is_some());
 
-        assert_eq!(ee.len(), 2);
+        assert_eq!(ee.is_empty(), false);
 
         drop(subs1);
 
-        assert_eq!(ee.len(), 1);
+        assert_eq!(ee.is_empty(), false);
 
         if let Some(ev) = fired_ev.borrow().clone() {
             assert_eq!(ev.ev, 123);
@@ -73,7 +73,7 @@ mod tests {
             }))
         };
 
-        assert_eq!(ee.len(), 2);
+        assert_eq!(ee.is_empty(), false);
 
         ee.emit(&Rc::new(SomeEvent { ev: 444, txt: "world" })).unwrap();
 
@@ -89,11 +89,11 @@ mod tests {
             assert_eq!(ev.ev, 444);
         }
 
-        assert_eq!(ee.len(), 0);
+        assert_eq!(ee.is_empty(), true);
 
         ee.reset();
 
-        assert_eq!(ee.len(), 0);
+        assert_eq!(ee.is_empty(), true);
 
         drop(ee);
 

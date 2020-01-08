@@ -7,50 +7,38 @@ use std::rc::Rc;
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
-    listeners: Rc<RefCell<Vec<Rc<RefCell<Listener<TEvent>>>>>>,
+    listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
+    new_listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "EventEmitter<{}>", self.listeners.borrow().len())
+        write!(f, "EventEmitter<{}>", self.listeners.len())
     }
 }
 
 impl<TEvent> EventEmitter<TEvent> {
     pub fn new() -> Self {
         Self {
-            listeners: Rc::new(RefCell::new(vec![])),
+            listeners: vec![],
+            new_listeners: vec![],
         }
     }
 
-    pub fn on(&mut self, lst: EventHandler<TEvent>) -> Subscription<TEvent> {
-        self.subscribe(Rc::new(RefCell::new(Listener {
-            handler: Some(lst),
-            once: false,
-        })))
+    pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
+        self.subscribe(Rc::new(RefCell::new(Listener::new(false, handler))))
     }
 
-    pub fn once(&mut self, lst: EventHandler<TEvent>) -> Subscription<TEvent> {
-        self.subscribe(Rc::new(RefCell::new(Listener {
-            handler: Some(lst),
-            once: true,
-        })))
-    }
-
-    fn cleanup(&mut self) {
-        self.listeners.borrow_mut().retain(|ref l| l.borrow().active());
-    }
-
-    pub fn len(&self) -> usize {
-        self.listeners.borrow().len()
+    pub fn once(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
+        self.subscribe(Rc::new(RefCell::new(Listener::new(true, handler))))
     }
 
     pub fn is_empty(&self) -> bool {
-        self.listeners.borrow().is_empty()
+        self.listeners.is_empty() && self.new_listeners.is_empty()
     }
 
     pub fn reset(&mut self) {
-        self.listeners = Rc::new(RefCell::new(vec![]));
+        self.listeners = vec![];
     }
 
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
@@ -60,36 +48,37 @@ impl<TEvent> EventEmitter<TEvent> {
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
     fn subscribe(&mut self, listener: Rc<RefCell<Listener<TEvent>>>) -> Subscription<TEvent> {
-        let subscription = Subscription::new(Rc::downgrade(&listener), Rc::downgrade(&self.listeners));
-
-        self.listeners.borrow_mut().push(listener);
-
-        subscription
+        let subsc = Subscription::new(Rc::downgrade(&listener));
+        self.new_listeners.push(listener);
+        subsc
     }
 
     fn publish(&mut self, message: &TEvent) -> EventHandlerResult {
-        let mut cleanup = false;
+        let mut res = Ok(());
 
-        for lst in self.listeners.borrow().iter() {
+        if !self.new_listeners.is_empty() {
+            self.listeners.extend(self.new_listeners.drain(..))
+        } else if self.listeners.is_empty() {
+            return res;
+        }
+
+        self.listeners.retain(|lst| {
+            if res.is_err() {
+                return true;
+            }
+
             let mut lst = lst.borrow_mut();
 
-            if let Some(handler) = &mut lst.handler {
-                (handler)(message)?;
-
-                if lst.once {
-                    cleanup = true;
-                    lst.cancel();
-                }
-            } else {
-                cleanup = true;
+            if !lst.is_active() {
+                return false;
             }
-        }
 
-        if cleanup {
-            self.cleanup();
-        }
+            res = lst.call(message);
 
-        Ok(())
+            !lst.once
+        });
+
+        res
     }
 }
 
