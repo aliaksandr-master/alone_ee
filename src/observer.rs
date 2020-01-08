@@ -1,7 +1,5 @@
 use crate::listener::{EventHandlerResult, Listener};
 use crate::subscription::Subscription;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub trait Observer<TEvent> {
     fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent>;

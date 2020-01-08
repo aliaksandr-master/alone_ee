@@ -1,14 +1,13 @@
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
 use crate::observer::Observer;
 use crate::subscription::Subscription;
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
-    listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
-    new_listeners_buf: Vec<Rc<RefCell<Listener<TEvent>>>>,
+    listeners: Vec<Arc<RwLock<Listener<TEvent>>>>,
+    new_listeners_buf: Vec<Arc<RwLock<Listener<TEvent>>>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
@@ -43,7 +42,8 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn len(&self) -> usize {
-        self.listeners.iter().filter(|l| l.borrow().is_active()).count() + self.new_listeners_buf.iter().filter(|l| l.borrow().is_active()).count()
+        self.listeners.iter().filter(|l| l.read().unwrap().is_active()).count()
+            + self.new_listeners_buf.iter().filter(|l| l.read().unwrap().is_active()).count()
     }
 
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
@@ -53,8 +53,8 @@ impl<TEvent> EventEmitter<TEvent> {
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
     fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent> {
-        let listener = Rc::new(RefCell::new(listener));
-        let subsc = Subscription::new(Rc::downgrade(&listener));
+        let listener = Arc::new(RwLock::new(listener));
+        let subsc = Subscription::new(Arc::downgrade(&listener));
         self.new_listeners_buf.push(listener);
         subsc
     }
@@ -73,7 +73,7 @@ impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
                 return true;
             }
 
-            let mut lst = lst.borrow_mut();
+            let mut lst = lst.write().unwrap();
 
             if !lst.is_active() {
                 return false;
