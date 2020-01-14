@@ -29,3 +29,14 @@ fn main () {
     drop(subscription); // unbind the listener
 }
 ```
+
+## Testing
+```bash
+$ cargo test --release
+```
+
+
+## Benchmark
+```bash
+$ cargo bench
+```
