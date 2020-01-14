@@ -1,5 +1,7 @@
+use std::cell::Cell;
 use std::error::Error;
 use std::fmt;
+use std::rc::{Rc, Weak};
 
 pub type EventHandlerResult = Result<(), Box<dyn Error>>;
 
@@ -8,7 +10,7 @@ pub type EventHandler<TEvent> = Box<dyn FnMut(&TEvent) -> EventHandlerResult>;
 pub struct Listener<TEvent> {
     pub handler: EventHandler<TEvent>,
     pub once: bool,
-    is_active: bool,
+    is_active: Rc<Cell<bool>>,
 }
 
 impl<TEvent> Listener<TEvent> {
@@ -17,7 +19,7 @@ impl<TEvent> Listener<TEvent> {
         Self {
             once,
             handler,
-            is_active: true,
+            is_active: Rc::new(Cell::new(true)),
         }
     }
 
@@ -28,21 +30,12 @@ impl<TEvent> Listener<TEvent> {
 
     #[inline(always)]
     pub fn is_active(&self) -> bool {
-        self.is_active
+        self.is_active.get()
     }
 
     #[inline(always)]
-    pub fn cancel(&mut self) {
-        if self.is_active {
-            self.is_active = false;
-            self.handler = Box::new(|_| Ok(()))
-        }
-    }
-}
-
-impl<TEvent> Drop for Listener<TEvent> {
-    fn drop(&mut self) {
-        self.cancel()
+    pub fn get_activation_flag(&self) -> Weak<Cell<bool>> {
+        return Rc::downgrade(&self.is_active);
     }
 }
 

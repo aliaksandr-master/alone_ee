@@ -1,14 +1,12 @@
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
 use crate::observer::Observer;
 use crate::subscription::Subscription;
-use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
-    listeners: Vec<Rc<RefCell<Listener<TEvent>>>>,
-    new_listeners_buf: Vec<Rc<RefCell<Listener<TEvent>>>>,
+    listeners: Vec<Option<Listener<TEvent>>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
@@ -19,10 +17,7 @@ impl<TEvent> fmt::Display for EventEmitter<TEvent> {
 
 impl<TEvent> EventEmitter<TEvent> {
     pub fn new() -> Self {
-        Self {
-            listeners: vec![],
-            new_listeners_buf: vec![],
-        }
+        Self { listeners: Vec::new() }
     }
 
     pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
@@ -34,16 +29,15 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.listeners.is_empty() && self.new_listeners_buf.is_empty()
+        self.listeners.is_empty()
     }
 
     pub fn reset(&mut self) {
-        self.listeners = vec![];
-        self.new_listeners_buf = vec![];
+        self.listeners = Vec::new();
     }
 
     pub fn len(&self) -> usize {
-        self.listeners.iter().filter(|l| l.borrow().is_active()).count() + self.new_listeners_buf.iter().filter(|l| l.borrow().is_active()).count()
+        self.listeners.iter().filter(|slot| slot.as_ref().map_or(false, |l| l.is_active())).count()
     }
 
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
@@ -53,36 +47,34 @@ impl<TEvent> EventEmitter<TEvent> {
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
     fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent> {
-        let listener = Rc::new(RefCell::new(listener));
-        let subsc = Subscription::new(Rc::downgrade(&listener));
-        self.new_listeners_buf.push(listener);
+        let subsc = Subscription::new(listener.get_activation_flag());
+        self.listeners.push(Some(listener));
         subsc
     }
 
     fn publish(&mut self, message: &TEvent) -> EventHandlerResult {
         let mut res = Ok(());
 
-        if !self.new_listeners_buf.is_empty() {
-            self.listeners.extend(self.new_listeners_buf.drain(..))
-        } else if self.listeners.is_empty() {
-            return res;
+        for slot in self.listeners.iter_mut() {
+            if res.is_err() {
+                break;
+            }
+
+            if let Some(lst) = slot {
+                if !lst.is_active() {
+                    slot.take();
+                    continue;
+                }
+
+                res = lst.call(message);
+
+                if lst.once {
+                    slot.take();
+                }
+            }
         }
 
-        self.listeners.retain(|lst| {
-            if res.is_err() {
-                return true;
-            }
-
-            let mut lst = lst.borrow_mut();
-
-            if !lst.is_active() {
-                return false;
-            }
-
-            res = lst.call(message);
-
-            !lst.once
-        });
+        self.listeners.retain(|slot| slot.is_some());
 
         res
     }
