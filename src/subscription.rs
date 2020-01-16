@@ -1,8 +1,7 @@
-use crate::listener::Listener;
 use std::cell::Cell;
 use std::fmt;
+use std::rc::Weak;
 use std::marker::PhantomData;
-use std::rc::{Rc, Weak};
 
 pub struct Subscription<TEvent> {
     shared_active_state: Option<Weak<Cell<bool>>>,
