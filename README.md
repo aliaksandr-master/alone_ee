@@ -20,8 +20,8 @@ fn main () {
         Ok(())
     }));
 
-    ee.emit("world1");
-    ee.emit("world2");
+    ee.emit("world1").unwrap();
+    ee.emit("world2").unwrap();
 
     // you will see 
     //     "hello world1"
