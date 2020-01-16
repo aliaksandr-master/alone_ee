@@ -8,25 +8,28 @@ fn main () {
     use alone_ee::event_emitter::EventEmitter;
     let ee = EventEmitte::Stringr::new();
 
-    let subscription = ee.on(Box::new(|ev| {  // listener will be alive till subscription is alive 
+    let subscription1 = ee.on(Box::new(|event_data| {  // listener will be alive till subscription is alive 
         // do something
-        println!("hello {}", ev.data());
+        println!("hello {}", event_data);
         Ok(())
     }));
 
-    ee.once(Box::new(|ev| {   // listener will be alive till subscription is alive or next emit will fired
+    let _subscription2 = ee.once(Box::new(|event_data| {   // listener will be alive till subscription is alive or next emit will fired
         // do something
-        println!("hello {} one more time", ev.data());
+        println!("hello {} one more time", event_data);
         Ok(())
     }));
 
-    ee.emit("world");
+    ee.emit("world1");
+    ee.emit("world2");
 
     // you will see 
-    //     "hello world"
-    //     "hello world one more time"
+    //     "hello world1"
+    //     "hello world1 one more time"
+    //     "hello world2"
 
-    drop(subscription); // unbind the listener
+    drop(subscription1); // unbind the listener
+    // _subscription2 will be removed automatically
 }
 ```
 
