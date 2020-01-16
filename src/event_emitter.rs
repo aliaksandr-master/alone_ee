@@ -1,12 +1,12 @@
+use std::fmt;
+use odds::vec::VecExt;
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
 use crate::observer::Observer;
 use crate::subscription::Subscription;
-use std::fmt;
-use std::rc::Rc;
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
-    listeners: Vec<Option<Listener<TEvent>>>,
+    listeners: Vec<Listener<TEvent>>,
 }
 
 impl<TEvent> fmt::Display for EventEmitter<TEvent> {
@@ -37,7 +37,7 @@ impl<TEvent> EventEmitter<TEvent> {
     }
 
     pub fn len(&self) -> usize {
-        self.listeners.iter().filter(|slot| slot.as_ref().map_or(false, |l| l.is_active())).count()
+        self.listeners.iter().filter(|l| l.is_active()).count()
     }
 
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
@@ -48,33 +48,26 @@ impl<TEvent> EventEmitter<TEvent> {
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
     fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent> {
         let subsc = Subscription::new(listener.get_activation_flag());
-        self.listeners.push(Some(listener));
+        self.listeners.push(listener);
         subsc
     }
 
     fn publish(&mut self, message: &TEvent) -> EventHandlerResult {
         let mut res = Ok(());
 
-        for slot in self.listeners.iter_mut() {
+        self.listeners.retain_mut(|lst| {
             if res.is_err() {
-                break;
+                return true;
             }
 
-            if let Some(lst) = slot {
-                if !lst.is_active() {
-                    slot.take();
-                    continue;
-                }
-
-                res = lst.call(message);
-
-                if lst.once {
-                    slot.take();
-                }
+            if !lst.is_active() {
+                return false;
             }
-        }
 
-        self.listeners.retain(|slot| slot.is_some());
+            res = lst.call(message);
+
+            !lst.once
+        });
 
         res
     }
