@@ -6,6 +6,10 @@ pub mod listener;
 pub mod observer;
 pub mod subscription;
 
+pub use event_emitter::EventEmitter;
+pub use listener::{EventHandler, EventHandlerResult};
+pub use subscription::Subscription;
+
 #[cfg(test)]
 mod tests {
     use crate::event_emitter::EventEmitter;
