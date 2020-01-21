@@ -1,8 +1,8 @@
-use std::fmt;
-use odds::vec::VecExt;
 use crate::listener::{EventHandler, EventHandlerResult, Listener};
 use crate::observer::Observer;
 use crate::subscription::Subscription;
+use odds::vec::VecExt;
+use std::fmt;
 
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
@@ -20,11 +20,11 @@ impl<TEvent> EventEmitter<TEvent> {
         Self { listeners: Vec::new() }
     }
 
-    pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
+    pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription {
         self.subscribe(Listener::new(false, handler))
     }
 
-    pub fn once(&mut self, handler: EventHandler<TEvent>) -> Subscription<TEvent> {
+    pub fn once(&mut self, handler: EventHandler<TEvent>) -> Subscription {
         self.subscribe(Listener::new(true, handler))
     }
 
@@ -46,7 +46,7 @@ impl<TEvent> EventEmitter<TEvent> {
 }
 
 impl<TEvent> Observer<TEvent> for EventEmitter<TEvent> {
-    fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription<TEvent> {
+    fn subscribe(&mut self, listener: Listener<TEvent>) -> Subscription {
         let subsc = Subscription::new(listener.get_activation_flag());
         self.listeners.push(listener);
         subsc
