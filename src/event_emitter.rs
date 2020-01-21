@@ -16,30 +16,37 @@ impl<TEvent> fmt::Display for EventEmitter<TEvent> {
 }
 
 impl<TEvent> EventEmitter<TEvent> {
+    #[inline(always)]
     pub fn new() -> Self {
         Self { listeners: Vec::new() }
     }
 
+    #[inline(always)]
     pub fn on(&mut self, handler: EventHandler<TEvent>) -> Subscription {
         self.subscribe(Listener::new(false, handler))
     }
 
+    #[inline(always)]
     pub fn once(&mut self, handler: EventHandler<TEvent>) -> Subscription {
         self.subscribe(Listener::new(true, handler))
     }
 
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.listeners.is_empty()
     }
 
+    #[inline(always)]
     pub fn reset(&mut self) {
         self.listeners = Vec::new();
     }
 
+    #[inline(always)]
     pub fn len(&self) -> usize {
         self.listeners.iter().filter(|l| l.is_active()).count()
     }
 
+    #[inline(always)]
     pub fn emit(&mut self, message: &TEvent) -> EventHandlerResult {
         self.publish(message)
     }
