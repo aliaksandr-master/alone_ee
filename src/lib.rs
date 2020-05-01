@@ -1,13 +1,14 @@
 #![allow(clippy::type_complexity)]
 #![allow(dead_code)]
 
-pub mod event_emitter;
-pub mod listener;
-pub mod observer;
-pub mod subscription;
+mod event_emitter;
+mod listener;
+mod observer;
+mod subscription;
 
 pub use event_emitter::EventEmitter;
 pub use listener::{EventHandler, EventHandlerResult};
+pub use observer::Observer;
 pub use subscription::Subscription;
 
 #[cfg(test)]
