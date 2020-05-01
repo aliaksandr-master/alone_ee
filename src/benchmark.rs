@@ -1,4 +1,4 @@
-use alone_ee::event_emitter::EventEmitter;
+use alone_ee::EventEmitter;
 use criterion::{black_box, criterion_group, criterion_main, Criterion, ParameterizedBenchmark};
 use std::cell::RefCell;
 use std::rc::Rc;
