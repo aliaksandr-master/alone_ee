@@ -4,7 +4,9 @@ use crate::subscription::Subscription;
 use odds::vec::VecExt;
 use std::fmt;
 
-/// Create basic event emitter with u32 event type
+/// Basic event emitter
+///
+/// Example:
 /// ```
 /// use alone_ee::EventEmitter;
 /// let mut ee: EventEmitter<u32> = EventEmitter::new();
@@ -18,6 +20,7 @@ use std::fmt;
 /// }));
 /// ee.emit(&22).unwrap();
 /// ```
+
 #[derive(Debug, Default)]
 pub struct EventEmitter<TEvent> {
     listeners: Vec<Listener<TEvent>>,
